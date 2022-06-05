@@ -22,8 +22,12 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 import requests
 from tqdm import tqdm
+from util.log_util import get_logger
+import logging
 
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+
+logger = get_logger(name=__name__, log_file=None, log_level=logging.DEBUG, log_level_name='')
+
 
 try:
     import tensorflow as tf

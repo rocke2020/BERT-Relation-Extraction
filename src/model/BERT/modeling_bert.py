@@ -29,8 +29,12 @@ from torch.nn import CrossEntropyLoss, MSELoss
 from .modeling_utils import PreTrainedModel, prune_linear_layer
 from .configuration_bert import BertConfig
 from .file_utils import add_start_docstrings
+from util.log_util import get_logger
+import logging
 
-logger = logging.getLogger(__name__)
+
+logger = get_logger(name=__name__, log_file=None, log_level=logging.DEBUG, log_level_name='')
+
 
 BERT_PRETRAINED_MODEL_ARCHIVE_MAP = {
     'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased-pytorch_model.bin",
@@ -741,6 +745,9 @@ class BertModel(BertPreTrainedModel):
         pooled_output = self.pooler(sequence_output)
         
         ### two heads: LM and blanks ###
+        # sequence_output.shape torch.Size([32, 53, 768])
+        # e1_e2_start.shape torch.Size([32, 2])
+        # blankv1v2.shape torch.Size([32, 32, 2, 768])
         blankv1v2 = sequence_output[:, e1_e2_start, :]
         buffer = []
         for i in range(blankv1v2.shape[0]): # iterate batch & collect

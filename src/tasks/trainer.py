@@ -15,11 +15,12 @@ from .train_funcs import load_state, load_results, evaluate_, evaluate_results
 from ..misc import save_as_pickle, load_pickle
 import matplotlib.pyplot as plt
 import time
+from util.log_util import get_logger
 import logging
 
-logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
-                    datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
-logger = logging.getLogger(__file__)
+
+logger = get_logger(name=__name__, log_file=None, log_level=logging.DEBUG, log_level_name='')
+
 
 def train_and_fit(args):
     
@@ -29,6 +30,7 @@ def train_and_fit(args):
         amp = None
     
     cuda = torch.cuda.is_available()
+    cuda = False
     
     train_loader, test_loader, train_len, test_len = load_dataloaders(args)
     logger.info("Loaded %d Training samples." % train_len)
@@ -36,6 +38,7 @@ def train_and_fit(args):
     if args.model_no == 0:
         from ..model.BERT.modeling_bert import BertModel as Model
         model = args.model_size #'bert-base-uncased'
+        model = '/home/qcdong/models/bert-base-cased'
         lower_case = True
         model_name = 'BERT'
         net = Model.from_pretrained(model, force_download=False, \

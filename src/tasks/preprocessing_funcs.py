@@ -16,20 +16,21 @@ from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.rnn import pad_sequence
 from ..misc import save_as_pickle, load_pickle
 from tqdm import tqdm
+from util.log_util import get_logger
 import logging
 
-tqdm.pandas(desc="prog_bar")
-logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
-                    datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
-logger = logging.getLogger('__file__')
 
-def process_text(text, mode='train'):
+logger = get_logger(name=__name__, log_file=None, log_level=logging.DEBUG, log_level_name='')
+tqdm.pandas(desc="prog_bar")
+
+
+def process_text(text_lines:list[str], mode='train'):
     sents, relations, comments, blanks = [], [], [], []
-    for i in range(int(len(text)/4)):
-        sent = text[4*i]
-        relation = text[4*i + 1]
-        comment = text[4*i + 2]
-        blank = text[4*i + 3]
+    for i in range(int(len(text_lines)/4)):
+        sent = text_lines[4*i]
+        relation = text_lines[4*i + 1]
+        comment = text_lines[4*i + 2]
+        blank = text_lines[4*i + 3]
         
         # check entries
         if mode == 'train':
@@ -47,6 +48,7 @@ def process_text(text, mode='train'):
         sents.append(sent); relations.append(relation), comments.append(comment); blanks.append(blank)
     return sents, relations, comments, blanks
 
+
 def preprocess_semeval2010_8(args):
     '''
     Data preprocessing for SemEval2010 task 8 dataset
@@ -54,17 +56,17 @@ def preprocess_semeval2010_8(args):
     data_path = args.train_data #'./data/SemEval2010_task8_all_data/SemEval2010_task8_training/TRAIN_FILE.TXT'
     logger.info("Reading training file %s..." % data_path)
     with open(data_path, 'r', encoding='utf8') as f:
-        text = f.readlines()
+        text_lines = f.readlines()
     
-    sents, relations, comments, blanks = process_text(text, 'train')
+    sents, relations, comments, blanks = process_text(text_lines, 'train')
     df_train = pd.DataFrame(data={'sents': sents, 'relations': relations})
     
     data_path = args.test_data #'./data/SemEval2010_task8_all_data/SemEval2010_task8_testing_keys/TEST_FILE_FULL.TXT'
     logger.info("Reading test file %s..." % data_path)
     with open(data_path, 'r', encoding='utf8') as f:
-        text = f.readlines()
+        text_lines = f.readlines()
     
-    sents, relations, comments, blanks = process_text(text, 'test')
+    sents, relations, comments, blanks = process_text(text_lines, 'test')
     df_test = pd.DataFrame(data={'sents': sents, 'relations': relations})
     
     rm = Relations_Mapper(df_train['relations'])

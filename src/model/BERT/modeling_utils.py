@@ -23,7 +23,6 @@ import json
 import logging
 import os
 from io import open
-
 import six
 import torch
 from torch import nn
@@ -32,8 +31,11 @@ from torch.nn import functional as F
 
 from .configuration_utils import PretrainedConfig
 from .file_utils import cached_path, WEIGHTS_NAME, TF_WEIGHTS_NAME, TF2_WEIGHTS_NAME
+from util.log_util import get_logger
+import logging
 
-logger = logging.getLogger(__name__)
+
+logger = get_logger(name=__name__, log_file=None, log_level=logging.DEBUG, log_level_name='')
 
 
 try:
@@ -112,10 +114,12 @@ class PreTrainedModel(nn.Module):
         return None  # Overwrite for models with output embeddings
 
     def tie_weights(self):
-        """ Make sure we are sharing the input and output embeddings.
+        """ Works if output_embeddings is not None. Normally it is None
+        Make sure we are sharing the input and output embeddings.
             Export to TorchScript can't handle parameter sharing so we are cloning them instead.
         """
         output_embeddings = self.get_output_embeddings()
+        logger.debug(f'output_embeddings is None {output_embeddings is None}')  # True
         if output_embeddings is not None:
             self._tie_or_clone_weights(output_embeddings, self.get_input_embeddings())
 
@@ -151,18 +155,23 @@ class PreTrainedModel(nn.Module):
             Pointer to the input tokens Embeddings Module of the model
         """
         base_model = getattr(self, self.base_model_prefix, self)  # get the base model if needed
+        logger.info(f'self.base_model_prefix {self.base_model_prefix}')
+        logger.info(f'base_model {base_model}')
+        logger.info(f'base_model {type(base_model)}')
         model_embeds = base_model._resize_token_embeddings(new_num_tokens)
         if new_num_tokens is None:
             return model_embeds
-
         # Update base model and current model config
         self.config.vocab_size = new_num_tokens
         base_model.vocab_size = new_num_tokens
 
         # Tie weights again if needed
-        if hasattr(self, 'tie_weights'):
-            self.tie_weights()
 
+        if hasattr(self, 'tie_weights'):
+            logger.debug(f'hasattr tie_weights')
+            self.tie_weights()
+        else:
+            logger.debug(f'Not hasattr tie_weights')
         return model_embeds
 
     def _resize_token_embeddings(self, new_num_tokens):
@@ -446,12 +455,19 @@ class PreTrainedModel(nn.Module):
             # Make sure we are able to load base models as well as derived models (with heads)
             start_prefix = ''
             model_to_load = model
+            logger.info(f'cls.base_model_prefix {cls.base_model_prefix}')            
+            logger.info(f'hasattr(model, cls.base_model_prefix) {hasattr(model, cls.base_model_prefix)}')  
+            logger.info(f'state_dict.keys() {state_dict.keys()}')   
             if not hasattr(model, cls.base_model_prefix) and any(s.startswith(cls.base_model_prefix) for s in state_dict.keys()):
                 start_prefix = cls.base_model_prefix + '.'
+            logger.info(f'start_prefix {start_prefix}')  # bert.            
+            # For normal model, it does not have attr 'bert'
             if hasattr(model, cls.base_model_prefix) and not any(s.startswith(cls.base_model_prefix) for s in state_dict.keys()):
                 model_to_load = getattr(model, cls.base_model_prefix)
-
+            logger.info(f'missing_keys {missing_keys}')
+            logger.info(f'model_to_load {model_to_load}')
             load(model_to_load, prefix=start_prefix)
+            logger.info(f'missing_keys {missing_keys}')
             if len(missing_keys) > 0:
                 logger.info("Weights of {} not initialized from pretrained model: {}".format(
                     model.__class__.__name__, missing_keys))

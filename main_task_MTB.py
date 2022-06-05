@@ -7,16 +7,17 @@ Created on Mon Dec  2 17:40:16 2019
 """
 from src.tasks.trainer import train_and_fit
 from src.tasks.infer import infer_from_trained, FewRel
-import logging
 from argparse import ArgumentParser
+from util.log_util import get_logger
+import logging
+
+
+logger = get_logger(name=__name__, log_file=None, log_level=logging.DEBUG, log_level_name='')
 
 '''
 This fine-tunes the BERT model on SemEval, FewRel tasks
 '''
 
-logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', \
-                    datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
-logger = logging.getLogger('__file__')
 
 if __name__ == "__main__":
     parser = ArgumentParser()
